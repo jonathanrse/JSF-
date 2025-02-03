@@ -5,7 +5,7 @@ import { useNavigate } from "react-router-dom";
 const socket = io("ws://localhost:3001");
 
 const LoginPage = () => {
-  const [nickname, setNickname] = useState("");
+  const [nickname, setNickname] = useState(localStorage.getItem("nickname") || "");
   const [error, setError] = useState("");
   const navigate = useNavigate();
 
@@ -15,11 +15,11 @@ const LoginPage = () => {
       return;
     }
 
-    // Vérifier si le pseudo est déjà utilisé
     socket.emit("checkNickname", nickname, (response) => {
       if (response.success) {
+        localStorage.setItem("nickname", nickname); // Sauvegarde dans localStorage
         socket.emit("setNickname", nickname);
-        navigate("/chat"); // Redirection vers la page du chat
+        navigate("/chat"); // Redirection vers le chat
       } else {
         setError(response.message);
       }

@@ -61,19 +61,11 @@ const ioHandler = (io) => {
 
         // Rejoindre un channel
         socket.on('joinChannel', (channel) => {
-            if (!socket.nickname) {
-                socket.emit('error', "⚠️ Vous devez définir un pseudo avec /nick avant de rejoindre un channel.");
-                return;
-            }
-
             socket.join(channel);
             console.log(`📢 ${socket.nickname} a rejoint #${channel}`);
             io.to(channel).emit('message', { user: 'Server', message: `${socket.nickname} a rejoint #${channel}` });
-
-            // Charger l'historique des messages du channel
-            const messages = getMessages(channel);
-            socket.emit('loadMessages', messages);
         });
+        
 
         // Quitter un channel
         socket.on('quitChannel', (channel) => {

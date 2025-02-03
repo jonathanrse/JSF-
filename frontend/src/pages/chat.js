@@ -7,8 +7,12 @@ const ChatPage = () => {
   const [message, setMessage] = useState("");
   const [channel, setChannel] = useState("general");
   const [messages, setMessages] = useState([]);
+  const nickname = localStorage.getItem("nickname") || "Anonyme";
 
   useEffect(() => {
+    // Envoie automatiquement le pseudo au backend à la connexion
+    socket.emit("setNickname", nickname);
+
     socket.on("message", (newMessage) => {
       setMessages((prev) => [...prev, newMessage]);
     });
@@ -37,48 +41,11 @@ const ChatPage = () => {
       switch (command) {
         case "/nick":
           if (args.length === 1) {
-            socket.emit("setNickname", args[0]); // Envoie directement au backend
+            socket.emit("setNickname", args[0]);
+            localStorage.setItem("nickname", args[0]); // Met à jour localStorage
           } else {
             setMessages((prev) => [...prev, { user: "Server", message: "⚠️ Utilisation: /nick nouveauPseudo" }]);
           }
-          break;
-
-        case "/create":
-          if (args.length === 1) {
-            socket.emit("createChannel", args[0]);
-          } else {
-            setMessages((prev) => [...prev, { user: "Server", message: "⚠️ Utilisation: /create nomDuChannel" }]);
-          }
-          break;
-
-        case "/delete":
-          if (args.length === 1) {
-            socket.emit("deleteChannel", args[0]);
-          } else {
-            setMessages((prev) => [...prev, { user: "Server", message: "⚠️ Utilisation: /delete nomDuChannel" }]);
-          }
-          break;
-
-        case "/join":
-          if (args.length === 1) {
-            socket.emit("joinChannel", args[0]);
-          } else {
-            setMessages((prev) => [...prev, { user: "Server", message: "⚠️ Utilisation: /join nomDuChannel" }]);
-          }
-          break;
-
-        case "/quit":
-          if (args.length === 1) {
-            socket.emit("quitChannel", args[0]);
-          } else {
-            setMessages((prev) => [...prev, { user: "Server", message: "⚠️ Utilisation: /quit nomDuChannel" }]);
-          }
-          break;
-
-        case "/users":
-          socket.emit("listUsers", (users) => {
-            setMessages((prev) => [...prev, { user: "Server", message: `👥 Utilisateurs connectés : ${users.join(", ")}` }]);
-          });
           break;
 
         default:
@@ -89,12 +56,13 @@ const ChatPage = () => {
       socket.emit("message", { channel, message });
     }
 
-    setMessage(""); // Réinitialiser l'input
+    setMessage("");
   };
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 p-4">
       <h2 className="text-2xl font-bold mb-4">Chat WebSocket</h2>
+      <p className="mb-2">👤 Pseudo actuel : <strong>{nickname}</strong></p>
 
       {/* Input pour entrer un message */}
       <div className="flex space-x-2 mb-4">
