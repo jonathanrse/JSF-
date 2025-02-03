@@ -28,14 +28,15 @@ const ioHandler = (io) => {
 
 
         // Créer un channel
-        socket.on('createChannel', (channel) => {
+        socket.on("createChannel", (channel) => {
             if (addChannel(channel)) {
                 console.log(`📢 Channel créé: #${channel}`);
-                io.emit('channelCreated', channel);
+                io.emit("message", { user: "Server", message: `📢 Le channel #${channel} a été créé.` });
             } else {
-                socket.emit('error', `⚠️ Le channel #${channel} existe déjà.`);
+                socket.emit("message", { user: "Server", message: `⚠️ Le channel #${channel} existe déjà.` });
             }
         });
+        
 
         // Supprimer un channel
         socket.on('deleteChannel', (channel) => {
@@ -48,10 +49,11 @@ const ioHandler = (io) => {
         });
 
         // Lister les channels
-        socket.on('listChannels', () => {
+        socket.on("listChannels", (callback) => {
             const channels = listChannels();
-            socket.emit('channelList', channels);
+            callback(channels);
         });
+        
 
         // Lister les utilisateurs d'un channel
         socket.on('listUsers', (channel) => {

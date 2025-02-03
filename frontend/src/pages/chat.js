@@ -48,6 +48,22 @@ const ChatPage = () => {
           }
           break;
 
+          case "/create":
+            if (args.length === 1) {
+                socket.emit("createChannel", args[0]);
+            } else {
+                setMessages((prev) => [...prev, { user: "Server", message: "⚠️ Utilisation: /create nomDuChannel" }]);
+            }
+            break;
+
+            case "/list":
+                socket.emit("listChannels", (channels) => {
+                    setMessages((prev) => [...prev, { user: "Server", message: `📜 Channels disponibles : ${channels.join(", ")}` }]);
+                });
+                break;
+            
+
+
         default:
           setMessages((prev) => [...prev, { user: "Server", message: "⚠️ Commande inconnue." }]);
           break;
