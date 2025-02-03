@@ -9,25 +9,62 @@ const usersFile = path.join(__dirname, '../data/users.json');
 
 // Lire un fichier JSON
 const readJsonFile = (filePath) => {
-    if (!fs.existsSync(filePath)) return {};
-    return JSON.parse(fs.readFileSync(filePath, 'utf8'));
+    try {
+        if (!fs.existsSync(filePath)) return {};
+        const data = fs.readFileSync(filePath, 'utf8');
+        return data ? JSON.parse(data) : {}; // Vérifie si le fichier est vide
+    } catch (error) {
+        console.error(`❌ Erreur de lecture du fichier ${filePath}:`, error.message);
+        return {}; // Retourne un objet vide en cas d'erreur
+    }
 };
+
 
 // Écrire dans un fichier JSON
 const writeJsonFile = (filePath, data) => {
     fs.writeFileSync(filePath, JSON.stringify(data, null, 2), 'utf8');
 };
 
+// Obtenir tous les utilisateurs
+const getUsers = () => {
+    return readJsonFile(usersFile);
+};
+
 // Sauvegarde d'un utilisateur
 const saveUser = (nickname, socketId) => {
-    console.log(`💾 Sauvegarde de l'utilisateur: ${nickname} (ID: ${socketId})`);
+    console.log(`💾 Tentative de sauvegarde de l'utilisateur: ${nickname} (ID: ${socketId})`);
 
     let users = readJsonFile(usersFile);
-    users[nickname] = { id: socketId };
-    writeJsonFile(usersFile, users);
+    console.log("📂 Contenu actuel de users.json:", users);
 
-    console.log(`✅ Utilisateur sauvegardé: ${nickname}`);
+    if (typeof users !== "object" || users === null) {
+        console.error("❌ Erreur : users.json est corrompu ou non valide.");
+        users = {}; // On réinitialise users.json
+    }
+
+    // Vérifier si l'utilisateur existe déjà
+    if (users[nickname]) {
+        console.log(`⚠️ L'utilisateur ${nickname} existe déjà.`);
+    } else {
+        users[nickname] = { id: socketId };
+    }
+
+    console.log("📝 Nouvel état de users.json avant écriture:", users);
+
+    try {
+        fs.writeFileSync(usersFile, JSON.stringify(users, null, 2), 'utf8');
+        console.log(`✅ Utilisateur ${nickname} sauvegardé avec succès !`);
+    } catch (error) {
+        console.error("❌ Erreur lors de l'écriture dans users.json :", error.message);
+    }
+
+    // Vérification immédiate après l'écriture
+    let verifyData = readJsonFile(usersFile);
+    console.log("🔍 Vérification après écriture:", verifyData);
 };
+
+
+
 
 // Ajouter un channel
 const addChannel = (channelName) => {
@@ -84,4 +121,4 @@ const addMessage = (channel, user, message) => {
     return newMessage;
 };
 
-module.exports = { addChannel, deleteChannel, listChannels, getMessages, addMessage, saveUser };
+module.exports = { addChannel, deleteChannel, listChannels, getMessages, addMessage, saveUser, getUsers };

@@ -1,42 +1,31 @@
-const { addChannel, deleteChannel, listChannels, getMessages, addMessage, saveUser, listUsers } = require('./storage');
-
-
+const { addChannel, deleteChannel, listChannels, getMessages, addMessage, saveUser, listUsers, getUsers } = require('./storage');
 
 const ioHandler = (io) => {
-
     io.on('connection', (socket) => {
         console.log(`🟢 Utilisateur connecté : ${socket.id}`);
 
-        socket.onAny((event, ...args) => {
-            console.log(`📩 Événement reçu: ${event}`, args);
+        // Vérifier si un pseudo est déjà pris
+        socket.on('checkNickname', (nickname, callback) => {
+            const users = getUsers();
+            if (users[nickname]) {
+                callback({ success: false, message: "Pseudo déjà pris" });
+            } else {
+                callback({ success: true });
+            }
         });
 
         // Définir un pseudo
-        socket.on('setNickname', (...args) => {
-            console.log(`📩 setNickname reçu avec valeur:`, args);
-        
-            // Vérifie si Postman envoie un tableau
-            const nickname = Array.isArray(args[0]) ? args[0][1] : args[0];
-        
-            if (!nickname || typeof nickname !== "string" || nickname.trim() === "") {
-                console.log("❌ Erreur: Pseudo invalide");
-                socket.emit('error', "⚠️ Vous devez fournir un pseudo valide.");
-                return;
-            }
-        
-            // Sauvegarde du pseudo
+        socket.on('setNickname', (nickname) => {
+            console.log(`📩 setNickname reçu: ${nickname}`);
+            
             socket.nickname = nickname;
             saveUser(nickname, socket.id);
-        
-            console.log(`✅ ${nickname} a été enregistré avec l'ID: ${socket.id}`);
-        
-            // Envoyer la confirmation
+            
+            console.log(`✅ ${nickname} a défini son pseudo`);
             socket.emit('success', `Votre pseudo est maintenant : ${nickname}`);
         });
         
-        
-        
-        
+
 
         // Créer un channel
         socket.on('createChannel', (channel) => {
@@ -93,7 +82,7 @@ const ioHandler = (io) => {
             io.to(channel).emit('message', { user: 'Server', message: `${socket.nickname} a quitté #${channel}` });
         });
 
-        // Envoyer un message
+        // Envoyer un message ou exécuter une commande
         socket.on('message', ({ channel, message }) => {
             if (!socket.nickname) {
                 socket.emit('error', "⚠️ Vous devez définir un pseudo avec /nick.");
@@ -104,6 +93,7 @@ const ioHandler = (io) => {
             const newMessage = addMessage(channel, socket.nickname, message);
             io.to(channel).emit('message', newMessage);
         });
+
 
         // Gérer la déconnexion
         socket.on('disconnect', () => {
