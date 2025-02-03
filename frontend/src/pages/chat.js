@@ -13,19 +13,83 @@ const ChatPage = () => {
       setMessages((prev) => [...prev, newMessage]);
     });
 
-    socket.on("error", (error) => {
-      alert(error);
+    socket.on("success", (successMessage) => {
+      setMessages((prev) => [...prev, { user: "Server", message: successMessage }]);
+    });
+
+    socket.on("error", (errorMessage) => {
+      setMessages((prev) => [...prev, { user: "Server", message: `⚠️ ${errorMessage}` }]);
     });
 
     return () => {
       socket.off("message");
+      socket.off("success");
       socket.off("error");
     };
   }, []);
 
   const handleSendMessage = () => {
-    socket.emit("message", { channel, message });
-    setMessage("");
+    if (message.startsWith("/")) {
+      const parts = message.trim().split(" ");
+      const command = parts[0].toLowerCase();
+      const args = parts.slice(1);
+
+      switch (command) {
+        case "/nick":
+          if (args.length === 1) {
+            socket.emit("setNickname", args[0]); // Envoie directement au backend
+          } else {
+            setMessages((prev) => [...prev, { user: "Server", message: "⚠️ Utilisation: /nick nouveauPseudo" }]);
+          }
+          break;
+
+        case "/create":
+          if (args.length === 1) {
+            socket.emit("createChannel", args[0]);
+          } else {
+            setMessages((prev) => [...prev, { user: "Server", message: "⚠️ Utilisation: /create nomDuChannel" }]);
+          }
+          break;
+
+        case "/delete":
+          if (args.length === 1) {
+            socket.emit("deleteChannel", args[0]);
+          } else {
+            setMessages((prev) => [...prev, { user: "Server", message: "⚠️ Utilisation: /delete nomDuChannel" }]);
+          }
+          break;
+
+        case "/join":
+          if (args.length === 1) {
+            socket.emit("joinChannel", args[0]);
+          } else {
+            setMessages((prev) => [...prev, { user: "Server", message: "⚠️ Utilisation: /join nomDuChannel" }]);
+          }
+          break;
+
+        case "/quit":
+          if (args.length === 1) {
+            socket.emit("quitChannel", args[0]);
+          } else {
+            setMessages((prev) => [...prev, { user: "Server", message: "⚠️ Utilisation: /quit nomDuChannel" }]);
+          }
+          break;
+
+        case "/users":
+          socket.emit("listUsers", (users) => {
+            setMessages((prev) => [...prev, { user: "Server", message: `👥 Utilisateurs connectés : ${users.join(", ")}` }]);
+          });
+          break;
+
+        default:
+          setMessages((prev) => [...prev, { user: "Server", message: "⚠️ Commande inconnue." }]);
+          break;
+      }
+    } else {
+      socket.emit("message", { channel, message });
+    }
+
+    setMessage(""); // Réinitialiser l'input
   };
 
   return (
@@ -56,9 +120,11 @@ const ChatPage = () => {
           {messages.map((msg, index) => (
             <li
               key={index}
-              className="p-2 border-b border-gray-200 text-gray-700"
+              className={`p-2 border-b border-gray-200 text-gray-700 ${
+                msg.user === "Server" ? "text-blue-500" : ""
+              }`}
             >
-              <strong className="text-blue-500">{msg.user} :</strong> {msg.message}
+              <strong>{msg.user} :</strong> {msg.message}
             </li>
           ))}
         </ul>
